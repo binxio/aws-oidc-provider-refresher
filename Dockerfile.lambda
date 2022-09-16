@@ -1,5 +1,5 @@
 FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.9
-RUN yum update && yum install -y zip
+RUN yum install -y zip
 WORKDIR /lambda
 
 ADD requirements.txt /tmp

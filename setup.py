@@ -12,13 +12,13 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='aws-oidc-provider-refresherer',
+    name='aws-oidc-provider-refresher',
     version="0.1.0",
-    url='https://github.com/binxio/aws-oidc-provider-refresherer',
+    url='https://github.com/binxio/aws-oidc-provider-refresher',
     license='BSD',
     author='Mark van Holsteijn',
     author_email='mark@binx.io',
-    description='refresheres thumbprints of OpenID connect providers',
+    description='refreshes thumbprints of OpenID connect providers',
     long_description=long_description,
     long_description_content_type='text/markdown',
     package_dir={'': 'src'},

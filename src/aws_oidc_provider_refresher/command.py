@@ -21,7 +21,7 @@ class InvalidOpenIDEndpointException(Exception):
 class Command:
     def __init__(
         self,
-        max_fingerprints: int = 0,
+        max_thumbprints: int = 0,
         append: bool = True,
         verbose: bool = False,
         dry_run: bool = False,
@@ -31,7 +31,7 @@ class Command:
         self.tagging = boto3.client("resourcegroupstaggingapi", region_name="us-east-1")
         self.verbose = verbose
         self.dry_run = dry_run
-        self.max_fingerprints = max_fingerprints
+        self.max_thumbprints = max_thumbprints
         self.append = append
         self.tag_filters = TagFilter(tags).to_api()
 
@@ -99,11 +99,11 @@ class Command:
                     f"new fingerprint {fingerprint} found of {url} valid until {public_key.not_valid_after}"
             )
 
-        if self.max_fingerprints and len(thumbprints) + 1 > self.max_fingerprints:
+        if self.max_thumbprints and len(thumbprints) + 1 > self.max_thumbprints:
             thumbprints = thumbprints[1:]
             if self.verbose:
                 log.info(
-                    f"limiting the number of thumbprints to {self.max_fingerprints}"
+                    f"limiting the number of thumbprints to {self.max_thumbprints}"
                 )
 
         if self.append:

@@ -17,8 +17,8 @@ help:
 	@echo 'make test            - execute the tests, requires a working AWS connection.'
 	@echo 'make deploy	    - lambda to bucket $(S3_BUCKET)'
 	@echo 'make deploy-all-regions - lambda to all regions with bucket prefix $(S3_BUCKET_PREFIX)'
-	@echo 'make deploy-lambda - deploys the manager.'
-	@echo 'make delete-lambda - deletes the manager.'
+	@echo 'make deploy-lambda - deploys the lambda.'
+	@echo 'make delete-lambda - deletes the lambda.'
 	@echo 'make demo            - deploys the provider and the demo cloudformation stack.'
 	@echo 'make delete-demo     - deletes the demo cloudformation stack.'
 
@@ -81,12 +81,12 @@ deploy: target/$(NAME)-$(VERSION).zip
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip \
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-latest.zip
 
-deploy-lambda: deploy target/$(NAME)-$(VERSION).zip
+deploy-lambda: target/$(NAME)-$(VERSION).zip
+	sed -i '' -e 's/lambdas\/aws-oidc-provider-refresher.*\.zip/lambdas\/aws-oidc-provider-refresher-$(VERSION).zip/g' cloudformation/aws-oidc-provider-refresher.yaml
 	aws cloudformation deploy \
 		--capabilities CAPABILITY_IAM \
 		--stack-name $(NAME) \
-		--template-file ./cloudformation/aws-oidc-provider-refresher.yaml \
-		--parameter-override CFNCustomProviderZipFileName=lambdas/$(NAME)-$(VERSION).zip
+		--template-file ./cloudformation/aws-oidc-provider-refresher.yaml
 
 delete-lambda:
 	aws cloudformation delete-stack --stack-name $(NAME)

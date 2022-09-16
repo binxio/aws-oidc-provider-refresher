@@ -5,9 +5,6 @@ Parameters:
   LambdaS3Bucket:
     Type: String
     Default: ''
-  CFNCustomProviderZipFileName:
-    Type: String
-    Default: lambdas/aws-oidc-provider-refresher-0.0.0.zip
 
 Conditions:
   UsePublicBucket: !Equals
@@ -25,7 +22,7 @@ Resources:
           - UsePublicBucket
           - !Sub 'binxio-public-${AWS::Region}'
           - !Ref 'LambdaS3Bucket'
-        S3Key: lambdas/aws-oidc-provider-refresher-0.0.0.zip
+        S3Key: lambdas/aws-oidc-provider-refresher-0.0.0-0a05c88-dirty.zip
       Handler: aws_oidc_provider_refresher.command.handle
       Role: !GetAtt OIDCProviderRefresherRole.Arn
       Runtime: python3.9
@@ -62,7 +59,7 @@ Resources:
     Type: AWS::Lambda::Permission
     Properties:
       Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt OIDCProviderRefresherRole.Arn
+      FunctionName: !GetAtt OIDCProviderRefresher.Arn
       Principal: events.amazonaws.com
 
   Schedule:
