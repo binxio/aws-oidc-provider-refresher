@@ -1,37 +1,48 @@
-import os
 from typing import Tuple
 
 import click
 
 from aws_oidc_provider_refresher.command import Command
-from aws_oidc_provider_refresher.logger import log
 from aws_oidc_provider_refresher.tag import Tag, TagType
 
 
-@click.command(help="update thumbprint list of selected Open ID connect providers")
-@click.option("--dry-run/--force", is_flag=True, default=True, help="do not change anything")
-@click.option("--verbose", is_flag=True, default=False, help="output")
+@click.command()
 @click.option(
-    "--append", is_flag=True, default=False, help="new fingerprint to the list"
-)
-@click.option("--max-fingerprints", type=int, default=0, help="in the thumbprint list")
-@click.option(
-    "--tag",
+    "--filter",
     "tags",
     type=TagType(),
     required=False,
     multiple=True,
-    help="to filter providers by in the format Name=Value.",
+    help="to select providers by in the format Name=Value.",
 )
+@click.option(
+    "--max-thumbprints", type=click.IntRange(1, 5), default=5, help="in the list"
+)
+@click.option(
+    "--dry-run/--force",
+    "dry_run",
+    default=True,
+    is_flag=True,
+    help="show what should happen or update the OIDC providers",
+)
+@click.option("--verbose", is_flag=True, default=False, help="output")
 @click.pass_context
 def main(
     ctx,
     dry_run: bool,
-    append: bool,
     verbose: bool,
-    max_fingerprints: int,
+    max_thumbprints: int,
     tags: Tuple[Tag],
 ):
+    """
+    updates the thumbprint list of Open ID connect providers.
+
+    It only show you what would happen: you have to specify --force
+    to perform the update.
+
+    By default all OIDC provider thumbprints are updated. You can
+    filter providers by tag.
+    """
     Command(**ctx.params).run()
 
 

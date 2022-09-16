@@ -66,7 +66,7 @@ test: Pipfile.lock
 	for i in $$PWD/cloudformation/*; do \
 		aws cloudformation validate-template --template-body file://$$i > /dev/null || exit 1; \
 	done
-	[ -z "$(ls -1 tests/test*.py 2>/dev/null)" ] || PYTHONPATH=$(PWD)/src pipenv run pytest ./tests/test*.py
+	[ -z "$(shell ls -1 tests/test*.py 2>/dev/null)" ] || PYTHONPATH=$(PWD)/src pipenv run python3 -munittest ./tests/test*.py
 
 fmt:
 	black $(shell find src -name \*.py) tests/*.py
@@ -88,7 +88,14 @@ deploy-lambda: target/$(NAME)-$(VERSION).zip
 		--stack-name $(NAME) \
 		--template-file ./cloudformation/aws-oidc-provider-refresher.yaml
 
-delete-lambda:
+delete-lambwda:
 	aws cloudformation delete-stack --stack-name $(NAME)
 	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)
+
+demo:
+	aws cloudformation deploy --stack-name $(NAME)-demo --template cloudformation/demo.yaml --no-fail-on-empty-changeset
+
+delete-demo:
+	aws cloudformation delete-stack --stack-name $(NAME)-demo
+	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)-demo
 

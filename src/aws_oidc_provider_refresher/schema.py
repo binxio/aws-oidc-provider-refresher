@@ -18,16 +18,12 @@ schema = {
             "description": "if you only want output",
             "default": False,
         },
-        "append": {
-            "type": "boolean",
-            "description": "fingerprints to the list",
-            "default": False,
-        },
         "max_thumbprints": {
             "type": "integer",
-            "minimum": 0,
-            "description": "to keep in the list, 0 means unlimited",
-            "default": 0,
+            "minimum": 1,
+            "maximum": 5,
+            "description": "to keep in the list",
+            "default": 5,
         },
         "tags": {
             "type": "array",
@@ -42,10 +38,11 @@ schema = {
 def extend_with_default(validator_class):
     validate_properties = validator_class.VALIDATORS["properties"]
 
+    # noinspection PyShadowingNames
     def set_defaults(validator, properties, instance, schema):
-        for property, subschema in properties.items():
+        for name, subschema in properties.items():
             if "default" in subschema:
-                instance.setdefault(property, subschema["default"])
+                instance.setdefault(name, subschema["default"])
 
         for error in validate_properties(
             validator,
@@ -67,18 +64,19 @@ validator = extend_with_default(Draft7Validator)(schema, format_checker=FormatCh
 def validate(request: dict) -> bool:
     """
     return True and completes the missing values if the dictionary matches the schema, otherwise False.
+
     >>> x = {}
     >>> validate(x)
     True
     >>> print(x)
-    {'verbose': False, 'dry_run': False, 'append': False, 'max_thumbprints': 0, 'tags': []}
+    {'verbose': False, 'dry_run': False, 'max_thumbprints': 5, 'tags': []}
     >>> validate({'max_thumbprints': -1})
     False
     >>> x = {'verbose': True, 'dry_run': True, 'max_thumbprints': 3, 'tags': ["auto-refresh=true"]}
     >>> validate(x)
     True
     >>> print(x)
-    {'verbose': True, 'dry_run': True, 'max_thumbprints': 3, 'tags': [{'Name': 'auto-refresh', 'Values': ['true']}], 'append': False}
+    {'verbose': True, 'dry_run': True, 'max_thumbprints': 3, 'tags': ['auto-refresh=true']}
 
     """
     try:

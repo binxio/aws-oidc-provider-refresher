@@ -37,15 +37,15 @@ class Tag(object):
 class TagFilter(object):
     """
     A boto3 tag filter
-    >>> TagFilter([Tag("Name")])
+    >>> TagFilter((Tag("Name"),))
     [{'Key': 'Name', 'Values': []}]
-    >>> TagFilter([Tag("Name", "Value")])
+    >>> TagFilter((Tag("Name", "Value"),))
     [{'Key': 'Name', 'Values': ['Value']}]
-    >>> TagFilter([Tag("Name", "Value"), Tag("Name", "Value2")])
+    >>> TagFilter((Tag("Name", "Value"), Tag("Name", "Value2")))
     [{'Key': 'Name', 'Values': ['Value', 'Value2']}]
-    >>> TagFilter([Tag("Name", "Value"), Tag("Name", "Value")])
+    >>> TagFilter((Tag("Name", "Value"), Tag("Name", "Value")))
     [{'Key': 'Name', 'Values': ['Value']}]
-    >>> TagFilter([Tag("Name", "Value"), Tag("Name", "Value2"), Tag("Region", "eu-west-1a"), Tag("Region", "eu-west-1b")])
+    >>> TagFilter((Tag("Name", "Value"), Tag("Name", "Value2"), Tag("Region", "eu-west-1a"), Tag("Region", "eu-west-1b")))
     [{'Key': 'Name', 'Values': ['Value', 'Value2']}, {'Key': 'Region', 'Values': ['eu-west-1a', 'eu-west-1b']}]
     """
 
@@ -75,6 +75,7 @@ class TagType(click.ParamType):
     """
     an AWS tag in the form <key>=<value> or <key>.
     """
+
     name = "tag"
 
     def convert(self, value, param, ctx):
