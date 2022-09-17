@@ -34,7 +34,11 @@ deploy: target/$(NAME)-$(VERSION).zip ## code zip to the bucket in the default r
 deploy-all-regions: deploy		## lambda to all regions with bucket prefix
 	@for REGION in $(ALL_REGIONS); do \
 		echo "copying to region $$REGION.." ; \
-		aws s3 --region $$REGION \
+		aws s3 --region $$REGION  --source-region $(AWS_REGION) \
+			cp --acl public-read \
+			s3://$(S3_BUCKET_PREFIX)-$(AWS_REGION)/lambdas/$(NAME)-$(VERSION).yaml \
+			s3://$(S3_BUCKET_PREFIX)-$$REGION/lambdas/$(NAME)-$(VERSION).yaml; \
+		aws s3 --region $$REGION  --source-region $(AWS_REGION) \
 			cp --acl public-read \
 			s3://$(S3_BUCKET_PREFIX)-$(AWS_REGION)/lambdas/$(NAME)-$(VERSION).zip \
 			s3://$(S3_BUCKET_PREFIX)-$$REGION/lambdas/$(NAME)-$(VERSION).zip; \
