@@ -22,7 +22,7 @@ Resources:
           - UsePublicBucket
           - !Sub 'binxio-public-${AWS::Region}'
           - !Ref 'LambdaS3Bucket'
-        S3Key: lambdas/aws-oidc-provider-refresher-0.0.0-3be90c8-dirty.zip
+        S3Key: lambdas/aws-oidc-provider-refresher-0.1.0.zip
       Handler: aws_oidc_provider_refresher.command.handle
       Role: !GetAtt OIDCProviderRefresherRole.Arn
       Runtime: python3.9
