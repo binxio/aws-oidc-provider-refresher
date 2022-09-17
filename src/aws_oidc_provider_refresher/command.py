@@ -136,8 +136,6 @@ class Command:
         if self.max_thumbprints and len(thumbprints) > self.max_thumbprints:
             thumbprints = thumbprints[-self.max_thumbprints :]
 
-        log.info(f"{provider['Url']} now has {len(thumbprints)} thumbprints")
-
         provider["ThumbprintList"] = thumbprints
         return True
 
@@ -203,9 +201,9 @@ class Command:
             updated = updated + 1
         if self.dry_run:
             log.info(
-                f"found {count} OpenID connect providers, would update {updated}\n"
+                f"Would update {updated} out of {count} OpenID connect providers, but no changes were made\n"
             )
-        elif updated > 0:
+        else:
             log.info(
                 f"found {count} OpenID connect providers, {updated} of which were updated.\n"
             )

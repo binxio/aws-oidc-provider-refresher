@@ -16,7 +16,10 @@ from aws_oidc_provider_refresher.tag import Tag, TagType
     help="to select providers by in the format Name=Value.",
 )
 @click.option(
-    "--max-thumbprints", type=click.IntRange(1, 5), default=5, help="in the list"
+    "--max-thumbprints",
+    type=click.IntRange(1, 5),
+    default=5,
+    help="to keep in the thumbprint list",
 )
 @click.option(
     "--dry-run/--force",
@@ -25,7 +28,9 @@ from aws_oidc_provider_refresher.tag import Tag, TagType
     is_flag=True,
     help="show what should happen or update the OIDC providers",
 )
-@click.option("--verbose", is_flag=True, default=False, help="output")
+@click.option(
+    "--verbose", is_flag=True, default=False, help="show some more detailed output"
+)
 @click.pass_context
 def main(
     ctx,
@@ -37,11 +42,11 @@ def main(
     """
     updates the thumbprint list of Open ID connect providers.
 
-    It only show you what would happen: you have to specify --force
-    to perform the update.
+    By default, all OIDC provider thumbprints are updated. To only update
+    OIDC providers which are tagged with auto-refresh=true, type:
 
-    By default all OIDC provider thumbprints are updated. You can
-    filter providers by tag.
+      aws-oidc-provider-refresher --filter auto-refresh=true --force
+
     """
     Command(**ctx.params).run()
 
