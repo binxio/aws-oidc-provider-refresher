@@ -10,19 +10,24 @@ ALL_REGIONS=$(shell aws --region $(AWS_REGION) \
 		--query 'join(`\n`, Regions[?RegionName != `$(AWS_REGION)`].RegionName)' \
 		--output text)
 
-help:
-	@echo 'make                 - builds a zip file to target/.'
-	@echo 'make release         - builds a zip file and deploys it to s3.'
-	@echo 'make clean           - the workspace.'
-	@echo 'make test            - execute the tests, requires a working AWS connection.'
-	@echo 'make deploy	    - lambda to bucket $(S3_BUCKET)'
-	@echo 'make deploy-all-regions - lambda to all regions with bucket prefix $(S3_BUCKET_PREFIX)'
-	@echo 'make deploy-lambda - deploys the lambda.'
-	@echo 'make delete-lambda - deletes the lambda.'
-	@echo 'make demo            - deploys the provider and the demo cloudformation stack.'
-	@echo 'make delete-demo     - deletes the demo cloudformation stack.'
+.DEFAULT_GOAL:=help
+.PHONY: help
+help:		## Display this help
+	$(info build and deploy $(NAME))
+	awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-deploy-all-regions: deploy
+deploy: target/$(NAME)-$(VERSION).zip ## code zip to the bucket in the default region
+	aws s3 --region $(AWS_REGION) \
+		cp --acl \
+		public-read target/$(NAME)-$(VERSION).zip \
+		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip
+	aws s3 --region $(AWS_REGION) \
+		cp --acl public-read \
+		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip \
+		s3://$(S3_BUCKET)/lambdas/$(NAME)-latest.zip
+
+
+deploy-all-regions: deploy		## lambda to all regions with bucket prefix
 	@for REGION in $(ALL_REGIONS); do \
 		echo "copying to region $$REGION.." ; \
 		aws s3 --region $$REGION \
@@ -35,12 +40,36 @@ deploy-all-regions: deploy
 			s3://$(S3_BUCKET_PREFIX)-$$REGION/lambdas/$(NAME)-latest.zip; \
 	done
 
-do-push: deploy
+deploy-lambda: target/$(NAME)-$(VERSION).zip ## lambda to the default AWS account
+	sed -i '' -e 's/lambdas\/aws-oidc-provider-refresher.*\.zip/lambdas\/aws-oidc-provider-refresher-$(VERSION).zip/g' cloudformation/aws-oidc-provider-refresher.yaml
+	aws cloudformation deploy \
+		--capabilities CAPABILITY_IAM \
+		--stack-name $(NAME) \
+		--template-file ./cloudformation/aws-oidc-provider-refresher.yaml
 
+delete-lambda:		## from the default AWS account
+	aws cloudformation delete-stack --stack-name $(NAME)
+	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)
+
+demo:				## to the default AWS account
+	aws cloudformation deploy --stack-name $(NAME)-demo --template cloudformation/demo.yaml --no-fail-on-empty-changeset
+
+delete-demo:		## from the default AWS account
+	aws cloudformation delete-stack --stack-name $(NAME)-demo
+	aws cloudformation wait stack-delete-complete --stack-name $(NAME)-demo
+
+deploy-pipeline:	## to the default AWS account
+	aws cloudformation deploy \
+	--capabilities CAPABILITY_IAM \
+	--stack-name $(NAME)-pipeline \
+	--template cloudformation/cicd-pipeline.yaml \
+	--no-fail-on-empty-changeset
+
+do-push: deploy
 
 do-build: Pipfile.lock target/$(NAME)-$(VERSION).zip
 
-upload-dist: Pipfile.lock
+upload-dist: Pipfile.lock  ## upload the distribution to pypi.org
 	pipenv run twine upload dist/*
 
 target/$(NAME)-$(VERSION).zip: setup.py src/*/*.py requirements.txt Dockerfile.lambda
@@ -58,44 +87,18 @@ target/$(NAME)-$(VERSION).zip: setup.py src/*/*.py requirements.txt Dockerfile.l
 Pipfile.lock: Pipfile setup.py
 	pipenv update -d
 
-clean:
+clean: ## clean the workspace
 	rm -rf venv target
 	find . -name \*.pyc | xargs rm 
 
-test: Pipfile.lock
+test: Pipfile.lock	## runs the test
 	for i in $$PWD/cloudformation/*; do \
 		aws cloudformation validate-template --template-body file://$$i > /dev/null || exit 1; \
 	done
 	[ -z "$(shell ls -1 tests/test*.py 2>/dev/null)" ] || PYTHONPATH=$(PWD)/src pipenv run python3 -munittest ./tests/test*.py
 
-fmt:
+fmt:  ## format all python code
 	black $(shell find src -name \*.py) tests/*.py
 
-deploy: target/$(NAME)-$(VERSION).zip
-	aws s3 --region $(AWS_REGION) \
-		cp --acl \
-		public-read target/$(NAME)-$(VERSION).zip \
-		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip
-	aws s3 --region $(AWS_REGION) \
-		cp --acl public-read \
-		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip \
-		s3://$(S3_BUCKET)/lambdas/$(NAME)-latest.zip
 
-deploy-lambda: target/$(NAME)-$(VERSION).zip
-	sed -i '' -e 's/lambdas\/aws-oidc-provider-refresher.*\.zip/lambdas\/aws-oidc-provider-refresher-$(VERSION).zip/g' cloudformation/aws-oidc-provider-refresher.yaml
-	aws cloudformation deploy \
-		--capabilities CAPABILITY_IAM \
-		--stack-name $(NAME) \
-		--template-file ./cloudformation/aws-oidc-provider-refresher.yaml
-
-delete-lambwda:
-	aws cloudformation delete-stack --stack-name $(NAME)
-	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)
-
-demo:
-	aws cloudformation deploy --stack-name $(NAME)-demo --template cloudformation/demo.yaml --no-fail-on-empty-changeset
-
-delete-demo:
-	aws cloudformation delete-stack --stack-name $(NAME)-demo
-	aws cloudformation wait stack-delete-complete  --stack-name $(NAME)-demo
-
+deploy-all-regions-and-upload-dist: deploy-all-regions upload-dist
