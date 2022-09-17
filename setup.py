@@ -13,7 +13,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='aws-oidc-provider-refresher',
-    version="0.2.0",
+    version="0.2.1",
     url='https://github.com/binxio/aws-oidc-provider-refresher',
     license='BSD',
     author='Mark van Holsteijn',
