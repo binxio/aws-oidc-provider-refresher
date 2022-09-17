@@ -28,6 +28,10 @@ Resources:
           - Name: TWINE_PASSWORD
             Value: /twine/aws-oidc-provider-refresher
             Type: PARAMETER_STORE
+          - Name: TWINE_USERNAME
+            Value: __token__
+            Type: PLAINTEXT
+ 
       Source:
         Type: GITHUB
         Location: https://github.com/binxio/aws-oidc-provider-refresher.git
