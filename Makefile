@@ -18,6 +18,10 @@ help:		## Display this help
 
 deploy: target/$(NAME)-$(VERSION).zip ## code zip to the bucket in the default region
 	aws s3 --region $(AWS_REGION) \
+		cp --acl public-read \
+		cloudformation/$(NAME).yaml \
+		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).yaml
+	aws s3 --region $(AWS_REGION) \
 		cp --acl \
 		public-read target/$(NAME)-$(VERSION).zip \
 		s3://$(S3_BUCKET)/lambdas/$(NAME)-$(VERSION).zip
