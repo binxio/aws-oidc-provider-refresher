@@ -41,19 +41,22 @@ class Command:
         iterates over all the matching OIDC providers filtered by `self.tag_filters`,
         returning the ARN.
         """
-        if self.verbose:
-            if self.tag_filters:
+        if self.tag_filters:
+            if self.verbose:
                 log.info("selecting OIDC providers with filter %s", self.tag_filters)
-            else:
+            get_resources = self.tagging.get_paginator("get_resources")
+            for resources in get_resources.paginate(
+                TagFilters=self.tag_filters,
+                ResourceTypeFilters=["iam:oidc-provider"],
+            ):
+                for resource in resources["ResourceTagMappingList"]:
+                    yield resource["ResourceARN"]
+        else:
+            if self.verbose:
                 log.info("selecting all OIDC providers")
-
-        get_resources = self.tagging.get_paginator("get_resources")
-        for resources in get_resources.paginate(
-            TagFilters=self.tag_filters,
-            ResourceTypeFilters=["iam:oidc-provider"],
-        ):
-            for resource in resources["ResourceTagMappingList"]:
-                yield resource["ResourceARN"]
+            response = self.iam.list_open_id_connect_providers()
+            for provider in response["OpenIDConnectProviderList"]:
+                yield provider["Arn"]
 
     @staticmethod
     def get_public_key(url: str) -> x509.Certificate:
