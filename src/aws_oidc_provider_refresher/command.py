@@ -29,34 +29,29 @@ class Command:
         tags: Tuple[Tag] = [],
     ):
         self.iam = boto3.client("iam")
-        self.tagging = boto3.client("resourcegroupstaggingapi", region_name="us-east-1")
         self.verbose = verbose
         self.dry_run = dry_run
         self.max_thumbprints = max_thumbprints
         self.append = append
-        self.tag_filters = TagFilter(tags).to_api()
+        self.tag_filters = TagFilter(tags)
 
-    def find_oidc_providers(self) -> Iterator[str]:
+    def find_oidc_providers(self) -> Iterator[Tuple[str, dict]]:
         """
         iterates over all the matching OIDC providers filtered by `self.tag_filters`,
         returning the ARN.
         """
-        if self.tag_filters:
-            if self.verbose:
-                log.info("selecting OIDC providers with filter %s", self.tag_filters)
-            get_resources = self.tagging.get_paginator("get_resources")
-            for resources in get_resources.paginate(
-                TagFilters=self.tag_filters,
-                ResourceTypeFilters=["iam:oidc-provider"],
-            ):
-                for resource in resources["ResourceTagMappingList"]:
-                    yield resource["ResourceARN"]
-        else:
-            if self.verbose:
-                log.info("selecting all OIDC providers")
-            response = self.iam.list_open_id_connect_providers()
-            for provider in response["OpenIDConnectProviderList"]:
-                yield provider["Arn"]
+
+        response = self.iam.list_open_id_connect_providers()
+        for response in response["OpenIDConnectProviderList"]:
+            arn = response["Arn"]
+            provider = self.iam.get_open_id_connect_provider(
+                OpenIDConnectProviderArn=arn
+            )
+
+            if self.tag_filters and not self.tag_filters.is_match(provider.get("Tags")):
+                log.info("skipping OIDC provider %s", arn)
+                continue
+            yield arn, provider
 
     @staticmethod
     def get_public_key(url: str) -> x509.Certificate:
@@ -188,11 +183,8 @@ class Command:
         """
         count = 0
         updated = 0
-        for arn in self.find_oidc_providers():
+        for arn, provider in self.find_oidc_providers():
             count = count + 1
-            provider = self.iam.get_open_id_connect_provider(
-                OpenIDConnectProviderArn=arn
-            )
             if not self.update_provider_thumbprint(provider):
                 continue
 
@@ -202,6 +194,11 @@ class Command:
                     ThumbprintList=provider["ThumbprintList"],
                 )
             updated = updated + 1
+
+        if not updated:
+            log.info("all OpenID connect provider thumbprints are up-to-date.")
+            return
+
         if self.dry_run:
             log.info(
                 f"Would update {updated} out of {count} OpenID connect providers, but no changes were made\n"

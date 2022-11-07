@@ -33,6 +33,24 @@ class Tag(object):
     def __repr__(self) -> str:
         return f"{self.key}={self.value}" if self.value else self.key
 
+    def is_match(self, tags: [dict]) -> bool:
+        """
+        returns True if this tag is matched in `tags`, otherwise False
+
+        >>> Tag.from_string("Name=123").is_match([{"Key": "Name", "Value":"123"}])
+        True
+        >>> Tag.from_string("Name=345").is_match([{"Key": "Name", "Value":"123"}])
+        False
+        >>> Tag.from_string("Name").is_match([{"Key": "Name", "Value":"123"}])
+        True
+        >>> Tag.from_string("backup=daily").is_match([{"Key": "Name", "Value":"123"}])
+        False
+        """
+        for tag in tags:
+            if tag.get("Key") == self.key:
+                return not self.value or tag.get("Value") == self.value
+        return False
+
 
 class TagFilter(object):
     """
@@ -66,6 +84,26 @@ class TagFilter(object):
         [{'Key': 'Name', 'Values': ['Value', 'Value2']}]
         """
         return [{"Key": k, "Values": self.filter[k]} for k in self.filter.keys()]
+
+    def is_match(self, tags: [dict]):
+        """
+        returns True if this filter matches the tags, otherwise False
+
+        >>> filter = TagFilter((Tag("Name", "vm1"), Tag("AZ", "eu-west-1a")))
+        >>> filter.is_match([{'Key': 'Name', 'Value': 'vm1'}, {'Key': 'AZ', 'Value': 'eu-west-1a'}])
+        True
+        >>> filter.is_match([{'Key': 'Name', 'Value': 'vm2'}, {'Key': 'AZ', 'Value': 'eu-west-1a'}])
+        False
+        >>> filter = TagFilter((Tag("Name"), Tag("AZ", "eu-west-1a")))
+        >>> filter.is_match([{'Key': 'Name', 'Value': 'vm2'}, {'Key': 'AZ', 'Value': 'eu-west-1a'}])
+        True
+        """
+        for key, values in self.filter.items():
+            for value in values:
+                tag = Tag(key, value)
+                if not tag.is_match(tags):
+                    return False
+        return True
 
     def __repr__(self):
         return str(self.to_api())
