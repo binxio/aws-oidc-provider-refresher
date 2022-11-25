@@ -66,8 +66,8 @@ Resources:
   Schedule:
     Type: AWS::Events::Rule
     Properties:
-      Name: aws-cloudwatch-set-log-retention
-      Description: set log retention on log streams
+      Name: aws-oidc-provider-refresh
+      Description: refresh the Open ID connect provider thumbprints
       ScheduleExpression: 'cron(58 * * * ? *)'
       State: ENABLED
       Targets:
