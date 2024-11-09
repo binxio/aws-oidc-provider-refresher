@@ -1,3 +1,6 @@
+Archived -> the OIDC thumbprint no longer needs to be updated 
+
+
 # AWS Open ID Connect provider thumbprint refresher
 
 ```
